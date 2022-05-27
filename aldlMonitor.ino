@@ -4,6 +4,11 @@
 int data_pin = A1;
 int irq = 2;
 bool sync = false;
+byte b1 = 0;
+byte b2 = 0;
+byte pos = 0;
+bool syncByte = false;
+bool page = false;
 
 
 void setup()
@@ -51,17 +56,25 @@ void init(int aldlPin, int irq) {
   
 }
 
-ISR(TIMER1_COMPA_vect)                    // процедура обработки прерывания переполнения счетчика (добавить смещение к таймеру)
+ISR(TIMER1_COMPA_vect)                    // процедура обработки прерывания переполнения счетчика (чтение чанка в 9 бит)
 {
   delayMicroseconds(9);
   TCNT1 = 0;
-//  Serial.print(TCNT1);
-//  Serial.print(" ");
-  Serial.println(fastRead(data_pin));
-//  Serial.print(" ");
-//  Serial.print(fastRead(irq));
-//  Serial.print(" ");
-//  Serial.print(analogRead(data_pin));
-//  Serial.print(" ");
-//  Serial.println(TCNT1);
+  if(pos == 0) {
+	syncByte = fastRead(data_pin);
+	b1 = 0;
+  } else {
+  	if(fastRead(data_pin) == 1) {
+		bitSet(b1, pos-1);
+	}
+  }
+  pos++;
+  if(pos == 9) {
+	pos = 0;
+    page = !page;
+	Serial.print(syncByte);
+	Serial.println(b1, BIN);
+	b1 = 0;
+	syncByte = false;
+  }
 }
